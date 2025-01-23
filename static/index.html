@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Classification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .preview {
+            max-width: 300px;
+            margin: 20px 0;
+            display: none;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #e8f5e9;
+            border: 1px solid #81c784;
+        }
+        .error {
+            background-color: #ffebee;
+            border: 1px solid #e57373;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Classification</h1>
+        <input type="file" id="imageInput" accept="image/*">
+        <button onclick="uploadImage()">Classify Image</button>
+        <img id="preview" class="preview">
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const preview = document.getElementById('preview');
+        const result = document.getElementById('result');
+
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        async function uploadImage() {
+            const file = imageInput.files[0];
+            if (!file) {
+                showResult('Please select an image first.', false);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Prediction failed');
+                }
+
+                const data = await response.json();
+                showResult(`Class: ${data.class}<br>Confidence: ${(data.confidence * 100).toFixed(2)}%`, true);
+            } catch (error) {
+                showResult('Error: ' + error.message, false);
+            }
+        }
+
+        function showResult(message, success) {
+            result.innerHTML = message;
+            result.style.display = 'block';
+            result.className = 'result ' + (success ? 'success' : 'error');
+        }
+    </script>
+</body>
+</html>
